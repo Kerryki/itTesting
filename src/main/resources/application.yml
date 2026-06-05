@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: test-scaffolding-generator
+  web:
+    resources:
+      static-locations: classpath:/static/
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+logging:
+  level:
+    com.example.testgen: DEBUG
+    org.springframework.web: INFO
