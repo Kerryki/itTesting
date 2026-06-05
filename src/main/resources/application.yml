@@ -4,13 +4,33 @@ spring:
   web:
     resources:
       static-locations: classpath:/static/
+  servlet:
+    multipart:
+      max-file-size: 1MB
+      max-request-size: 1MB
+  mvc:
+    log-request-details: false
 
 server:
   port: 8080
   servlet:
     context-path: /
+  tomcat:
+    max-http-form-post-size: 1MB
+    max-swallow-size: 1MB
 
 logging:
   level:
     com.example.testgen: DEBUG
     org.springframework.web: INFO
+  file:
+    name: logs/application.log
+
+app:
+  feedback:
+    log-path: logs/feedback.jsonl
+    max-file-size: 100MB
+    max-request-size: 1MB
+  security:
+    enabled: true
+    api-key: testgen-default-key

@@ -3,8 +3,10 @@ package com.example.testgen.generator
 import com.example.testgen.domain.GeneratedFile
 import com.example.testgen.domain.ParsedUseCase
 import com.samskivert.mustache.Mustache
+import org.springframework.stereotype.Component
 import java.io.InputStreamReader
 
+@Component
 class TestFileGenerator {
     fun generateTest(useCase: ParsedUseCase): GeneratedFile {
         val template = loadTemplate("templates/integration_test.mustache")
@@ -54,11 +56,14 @@ class TestFileGenerator {
 
     private fun inferDefaultValue(type: String): String {
         return when {
-            type.startsWith("String") -> ""
-            type.startsWith("Int") -> "0"
-            type.startsWith("Long") -> "0L"
-            type.startsWith("Boolean") -> "false"
-            type.startsWith("BigDecimal") -> "0.0"
+            type.startsWith("String") -> "test-value"
+            type.startsWith("Int") -> "1"
+            type.startsWith("Long") -> "1L"
+            type.startsWith("Boolean") -> "true"
+            type.startsWith("BigDecimal") -> "100.0"
+            type.startsWith("List") -> "emptyList()"
+            type.startsWith("Map") -> "emptyMap()"
+            type.startsWith("Set") -> "emptySet()"
             else -> "null"
         }
     }

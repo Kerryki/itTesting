@@ -5,21 +5,32 @@ import com.example.testgen.domain.DtoField
 import com.example.testgen.domain.ParsedUseCase
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
-import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 
+@Component
 class KotlinCodeParser {
-    private val environment: KotlinCoreEnvironment
+    private val logger = LoggerFactory.getLogger(javaClass)
+    private var environment: KotlinCoreEnvironment? = null
 
-    init {
-        val config = KotlinCoreEnvironment.createForProduction(
-            Disposer.newDisposable(),
-            org.jetbrains.kotlin.config.CompilerConfiguration(),
-            EnvironmentConfigFiles.JVM_CONFIG_FILES
-        )
-        environment = config
+    private fun getEnvironment(): KotlinCoreEnvironment {
+        if (environment == null) {
+            synchronized(this) {
+                if (environment == null) {
+                    val parentDisposable = org.jetbrains.kotlin.com.intellij.openapi.util.Disposer.newDisposable()
+                    environment = KotlinCoreEnvironment.createForProduction(
+                        parentDisposable,
+                        org.jetbrains.kotlin.config.CompilerConfiguration(),
+                        EnvironmentConfigFiles.JVM_CONFIG_FILES
+                    )
+                    logger.debug("KotlinCodeParser environment initialized")
+                }
+            }
+        }
+        return environment!!
     }
 
     fun parseUseCase(content: String): ParsedUseCase? {
@@ -64,9 +75,10 @@ class KotlinCodeParser {
 
     private fun parseKotlinCode(content: String): KtFile? {
         return try {
-            val ktPsiFactory = org.jetbrains.kotlin.psi.KtPsiFactory(environment.project)
+            val ktPsiFactory = org.jetbrains.kotlin.psi.KtPsiFactory(getEnvironment().project)
             ktPsiFactory.createFile(content) as? KtFile
         } catch (e: Exception) {
+            logger.warn("Failed to parse Kotlin code: ${e::class.simpleName}")
             null
         }
     }
@@ -83,17 +95,14 @@ class KotlinCodeParser {
     }
 
     private fun extractDataClassFields(dataClass: KtClass): List<DtoField> {
-        val fields = mutableListOf<DtoField>()
-
-        val primaryConstructor = dataClass.primaryConstructor
-        primaryConstructor?.valueParameters?.forEach { param ->
-            val fieldName = param.name ?: return@forEach
-            val fieldType = param.typeReference?.text?.trim() ?: "Any"
-            val isNullable = param.typeReference?.text?.contains("?") == true
-
-            fields.add(DtoField(fieldName, fieldType, isNullable))
-        }
-
-        return fields
+        return dataClass.primaryConstructor
+            ?.valueParameters
+            ?.mapNotNull { param ->
+                val fieldName = param.name ?: return@mapNotNull null
+                val fieldTypeText = param.typeReference?.text?.trim() ?: "Any"
+                val isNullable = fieldTypeText.contains("?")
+                DtoField(fieldName, fieldTypeText, isNullable)
+            }
+            ?: emptyList()
     }
 }

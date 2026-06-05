@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
+import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -21,6 +22,7 @@ class UploadControllerTest {
     private lateinit var mockMvc: MockMvc
 
     @Test
+    @WithMockUser
     fun `upload should return 200 with generated test`() {
         val fileContent = Files.readString(Paths.get("src/test/resources/dummy/SimpleUseCase.kt"))
 
@@ -36,6 +38,7 @@ class UploadControllerTest {
     }
 
     @Test
+    @WithMockUser
     fun `upload should return generated test with correct class name`() {
         val fileContent = Files.readString(Paths.get("src/test/resources/dummy/SimpleUseCase.kt"))
 
@@ -50,6 +53,7 @@ class UploadControllerTest {
     }
 
     @Test
+    @WithMockUser
     fun `upload should return error for invalid file`() {
         val invalidContent = "this is not a valid kotlin file"
 
@@ -61,5 +65,17 @@ class UploadControllerTest {
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error").exists())
+    }
+
+    @Test
+    fun `upload should return 401 when not authenticated`() {
+        val fileContent = Files.readString(Paths.get("src/test/resources/dummy/SimpleUseCase.kt"))
+
+        mockMvc.perform(
+            post("/api/upload")
+                .contentType(MediaType.TEXT_PLAIN)
+                .content(fileContent)
+        )
+            .andExpect(status().isUnauthorized)
     }
 }

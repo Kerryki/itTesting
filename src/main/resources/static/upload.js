@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             loadStats();
         } catch (error) {
-            console.error('Error sending feedback:', error);
+            // Silently fail; feedback is optional
         }
     }
 
@@ -178,6 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadStats() {
         try {
             const response = await fetch('/api/stats');
+            if (!response.ok) {
+                // Silently fail; stats are optional
+                return;
+            }
             const stats = await response.json();
 
             if (stats.success) {
@@ -185,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('usefulCount').textContent = stats.data.usefulCount || '0';
             }
         } catch (error) {
-            console.error('Error loading stats:', error);
+            // Silently fail; stats are optional and may not be available
         }
     }
 
