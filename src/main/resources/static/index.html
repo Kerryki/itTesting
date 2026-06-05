@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Scaffolding Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Test Scaffolding Generator</h1>
+            <p class="subtitle">Auto-generate Spring Boot integration tests for hexagonal architecture</p>
+        </header>
+
+        <main>
+            <section class="upload-section">
+                <h2>Upload Kotlin Use Case</h2>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept=".kt" style="display: none;">
+                    <div class="upload-content">
+                        <p>📁 Drag and drop your Kotlin use case file here</p>
+                        <p class="small">or</p>
+                        <button class="button button-primary" id="selectFileBtn">Select File</button>
+                    </div>
+                </div>
+                <p class="file-info" id="fileInfo" style="display: none;">
+                    Selected: <span id="fileName"></span>
+                </p>
+            </section>
+
+            <section class="preview-section" id="previewSection" style="display: none;">
+                <h2>Generated Test</h2>
+                <div class="preview-header">
+                    <h3 id="previewFilename"></h3>
+                    <div class="feedback-buttons">
+                        <button class="button button-success" id="thumbsUpBtn">👍 Useful</button>
+                        <button class="button button-danger" id="thumbsDownBtn">👎 Not Useful</button>
+                    </div>
+                </div>
+                <pre id="previewContent" class="code-preview"></pre>
+                <div class="preview-actions">
+                    <button class="button button-secondary" id="copyBtn">📋 Copy to Clipboard</button>
+                    <button class="button button-secondary" id="downloadBtn">⬇️ Download</button>
+                </div>
+            </section>
+
+            <section class="error-section" id="errorSection" style="display: none;">
+                <h2>Error</h2>
+                <div class="error-message" id="errorMessage"></div>
+                <button class="button button-secondary" id="closeErrorBtn">Close</button>
+            </section>
+
+            <section class="stats-section">
+                <h3>Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat">
+                        <div class="stat-number" id="totalGenerated">0</div>
+                        <div class="stat-label">Tests Generated</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number" id="usefulCount">0</div>
+                        <div class="stat-label">Marked Useful</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Built with Spring Boot, Kotlin, and WebTestClient</p>
+        </footer>
+    </div>
+
+    <script src="upload.js"></script>
+</body>
+</html>
