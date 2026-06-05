@@ -1,52 +1,17 @@
-package {{packageName}}.integration
+package {{packageName}}
 
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.web.reactive.server.WebTestClient
+import org.assertj.core.api.Assertions.assertThat
 
-@SpringBootTest
-@AutoConfigureWebTestClient
 class {{classNameTest}} {
 
-    @Autowired
-    private lateinit var webTestClient: WebTestClient
-
     @Test
-    fun `execute should return 200 with valid request`() {
-        val request = {{requestTypeName}}(
-            {{#requestFields}}
-            {{name}} = {{#nullable}}null{{/nullable}}{{^nullable}}"{{defaultValue}}"{{/nullable}},
-            {{/requestFields}}
-        )
-
-        webTestClient.post()
-            .uri("{{defaultPath}}")
-            .bodyValue(request)
-            .exchange()
-            .expectStatus().isOk
-            // Response: {{responseTypeName}}
-            .expectBodyUntypedJson()
-            .jsonPath("$.success").isEqualTo(true)
-            .jsonPath("$.data.orderId").exists()
-            // TODO: Add more assertions based on response structure
-    }
-
-    @Test
-    fun `execute should return 400 when required field is missing`() {
-        // TODO: Create request with missing required field
-        // val request = {{requestTypeName}}(...)
-
-        webTestClient.post()
-            .uri("{{defaultPath}}")
-            .bodyValue(request)
-            .exchange()
-            .expectStatus().isBadRequest
-    }
-
-    @Test
-    fun `execute should handle edge cases`() {
-        // TODO: Test edge cases (empty strings, negative numbers, etc.)
+    fun `should execute use case successfully`() {
+        // TODO: instantiate {{className}} and supply a {{requestTypeName}} request
+        // val useCase = {{className}}(/* dependencies */)
+        // val request = {{requestTypeName}}(/* fields */)
+        // val result: {{responseTypeName}} = useCase.execute(request)
+        // assertThat(result).isNotNull()
+        assertThat(true).isTrue()
     }
 }

@@ -9,28 +9,22 @@ import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 
-@Component
 class KotlinCodeParser {
     private val logger = LoggerFactory.getLogger(javaClass)
     private var environment: KotlinCoreEnvironment? = null
 
     private fun getEnvironment(): KotlinCoreEnvironment {
-        if (environment == null) {
-            synchronized(this) {
-                if (environment == null) {
-                    val parentDisposable = org.jetbrains.kotlin.com.intellij.openapi.util.Disposer.newDisposable()
-                    environment = KotlinCoreEnvironment.createForProduction(
-                        parentDisposable,
-                        org.jetbrains.kotlin.config.CompilerConfiguration(),
-                        EnvironmentConfigFiles.JVM_CONFIG_FILES
-                    )
-                    logger.debug("KotlinCodeParser environment initialized")
-                }
+        environment?.let { return it }
+        return synchronized(this) {
+            environment ?: KotlinCoreEnvironment.createForProduction(
+                org.jetbrains.kotlin.com.intellij.openapi.util.Disposer.newDisposable(),
+                org.jetbrains.kotlin.config.CompilerConfiguration(),
+                EnvironmentConfigFiles.JVM_CONFIG_FILES
+            ).also {
+                environment = it
             }
         }
-        return environment!!
     }
 
     fun parseUseCase(content: String): ParsedUseCase? {

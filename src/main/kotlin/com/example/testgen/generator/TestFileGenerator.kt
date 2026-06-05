@@ -3,10 +3,8 @@ package com.example.testgen.generator
 import com.example.testgen.domain.GeneratedFile
 import com.example.testgen.domain.ParsedUseCase
 import com.samskivert.mustache.Mustache
-import org.springframework.stereotype.Component
 import java.io.InputStreamReader
 
-@Component
 class TestFileGenerator {
     fun generateTest(useCase: ParsedUseCase): GeneratedFile {
         val template = loadTemplate("templates/integration_test.mustache")
