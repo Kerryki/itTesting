@@ -63,4 +63,39 @@ class KotlinCodeParserTest {
 
         assertThat(useCase).isNull()
     }
+
+    @Test
+    fun `should parse interface-based UseCase (hexagonal pattern)`() {
+        val content = """
+            package com.example.taskmanager.domain.port.`in`
+            interface CreateTaskUseCase {
+                fun createTask(command: CreateTaskCommand): Task
+            }
+            data class CreateTaskCommand(val title: String, val description: String?)
+        """.trimIndent()
+
+        val parser = KotlinCodeParser()
+        val useCase = parser.parseUseCase(content)
+
+        assertThat(useCase).isNotNull
+        val nonNullUseCase = requireNotNull(useCase) { "useCase must not be null" }
+        assertThat(nonNullUseCase.className).isEqualTo("CreateTaskUseCase")
+        assertThat(nonNullUseCase.requestTypeName).isEqualTo("CreateTaskCommand")
+        assertThat(nonNullUseCase.responseTypeName).isEqualTo("Task")
+    }
+
+    @Test
+    fun `should return null for interface with more than one method`() {
+        val content = """
+            interface TwoMethodUseCase {
+                fun doA(cmd: CmdA): ResultA
+                fun doB(cmd: CmdB): ResultB
+            }
+        """.trimIndent()
+
+        val parser = KotlinCodeParser()
+        val useCase = parser.parseUseCase(content)
+
+        assertThat(useCase).isNull()
+    }
 }

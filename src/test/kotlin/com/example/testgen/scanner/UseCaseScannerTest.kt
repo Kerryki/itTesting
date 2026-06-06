@@ -47,16 +47,27 @@ class UseCaseScannerTest {
     fun `scan() discovers use cases from the dummy test fixtures`() {
         val results = scanner.scan(dummyDir, TestgenConfig())
 
-        // The dummy directory contains CreateOrderUseCase.kt and SimpleUseCase.kt,
-        // both of which declare a class ending in UseCase with an execute() method.
+        // The dummy directory contains CreateOrderUseCase.kt, SimpleUseCase.kt (class-based),
+        // and CreateTaskUseCase.kt (interface-based hexagonal pattern).
         val classNames = results.map { it.useCase.className }
-        assertThat(classNames).containsExactlyInAnyOrder("CreateOrderUseCase", "SimpleUseCase")
+        assertThat(classNames).containsExactlyInAnyOrder("CreateOrderUseCase", "SimpleUseCase", "CreateTaskUseCase")
+    }
+
+    @Test
+    fun `scan() correctly resolves method name and types for interface-based UseCase`() {
+        val results = scanner.scan(dummyDir, TestgenConfig())
+        val taskUseCase = results.find { it.useCase.className == "CreateTaskUseCase" }
+
+        assertThat(taskUseCase).isNotNull
+        val nonNullTaskUseCase = requireNotNull(taskUseCase) { "CreateTaskUseCase result must not be null" }
+        assertThat(nonNullTaskUseCase.useCase.requestTypeName).isEqualTo("CreateTaskCommand")
+        assertThat(nonNullTaskUseCase.useCase.responseTypeName).isEqualTo("Task")
     }
 
     @Test
     fun `scan() respects excludes pattern — excluded file produces no results`() {
-        // Exclude SimpleUseCase.kt; only CreateOrderUseCase should be returned.
-        val config = TestgenConfig(excludes = listOf("**/SimpleUseCase.kt"))
+        // Exclude both SimpleUseCase.kt and CreateTaskUseCase.kt; only CreateOrderUseCase should be returned.
+        val config = TestgenConfig(excludes = listOf("**/SimpleUseCase.kt", "**/CreateTaskUseCase.kt"))
 
         val results = scanner.scan(dummyDir, config)
 

@@ -34,13 +34,30 @@ class KotlinCodeParser {
         val useCaseClass = findUseCaseClass(ktFile) ?: return null
         val className = useCaseClass.name ?: return null
 
-        val executeMethod = useCaseClass.declarations.filterIsInstance<KtFunction>()
-            .find { it.name == "execute" } ?: return null
-        val paramList = executeMethod.valueParameters.firstOrNull() ?: return null
-        val requestTypeName = paramList.typeReference?.text?.trim() ?: return null
+        val useCaseMethod = if (useCaseClass.isInterface()) {
+            val methods = useCaseClass.declarations.filterIsInstance<KtFunction>()
+            when {
+                methods.isEmpty() -> {
+                    logger.warn("Interface $className has no methods — skipping")
+                    return null
+                }
+                methods.size > 1 -> {
+                    logger.warn("Interface $className has ${methods.size} methods (expected exactly 1) — skipping")
+                    return null
+                }
+                else -> methods.first()
+            }
+        } else {
+            useCaseClass.declarations.filterIsInstance<KtFunction>()
+                .find { it.name == "execute" } ?: return null
+        }
 
-        val returnType = executeMethod.typeReference?.text?.trim() ?: return null
-        val responseTypeName = returnType
+        val methodName = useCaseMethod.name ?: return null
+        val paramList = useCaseMethod.valueParameters.firstOrNull() ?: return null
+        val requestTypeName = paramList.typeReference?.text?.trim() ?: return null
+        val responseTypeName = useCaseMethod.typeReference?.text?.trim() ?: return null
+
+        logger.debug("Parsed UseCase: $className method=$methodName request=$requestTypeName response=$responseTypeName")
 
         return ParsedUseCase(
             className = className,
@@ -79,8 +96,15 @@ class KotlinCodeParser {
 
     private fun findUseCaseClass(ktFile: KtFile): KtClass? {
         return ktFile.declarations.filterIsInstance<KtClass>()
-            .find { it.name?.endsWith("UseCase") == true &&
-                    it.declarations.filterIsInstance<KtFunction>().any { f -> f.name == "execute" } }
+            .find { ktClass ->
+                ktClass.name?.endsWith("UseCase") == true && (
+                    // Class-based: must have an execute() method
+                    (!ktClass.isInterface() && ktClass.declarations.filterIsInstance<KtFunction>()
+                        .any { f -> f.name == "execute" }) ||
+                    // Interface-based: any interface ending in UseCase with at least one method
+                    (ktClass.isInterface() && ktClass.declarations.filterIsInstance<KtFunction>().isNotEmpty())
+                )
+            }
     }
 
     private fun findDataClass(ktFile: KtFile, className: String): KtClass? {

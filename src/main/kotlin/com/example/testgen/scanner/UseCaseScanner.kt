@@ -23,14 +23,34 @@ class UseCaseScanner(private val parser: KotlinCodeParser) {
 
     private fun collectKtFiles(sourceDir: File, config: TestgenConfig): List<File> {
         val fs = FileSystems.getDefault()
-        val includes = config.includes.map { fs.getPathMatcher("glob:$it") }
-        val excludes = config.excludes.map { fs.getPathMatcher("glob:$it") }
+        // For each glob pattern we compile two matchers:
+        //   1. The full pattern — matches nested paths like "a/b/Foo.kt" against "**/Foo.kt".
+        //   2. A filename-only pattern (the last path component of the glob) — matches a
+        //      single-element relative path ("Foo.kt") that the full "**/Foo.kt" pattern
+        //      does NOT match on the JVM because "**" requires at least one directory segment.
+        // Both matchers operate exclusively on relative paths, so no absolute-path exposure.
+        fun matchers(patterns: List<String>) = patterns.map { pattern ->
+            val full = fs.getPathMatcher("glob:$pattern")
+            val fileNameGlob = pattern.substringAfterLast('/')
+            val fileNameOnly = fs.getPathMatcher("glob:$fileNameGlob")
+            Pair(full, fileNameOnly)
+        }
+
+        val includes = matchers(config.includes)
+        val excludes = matchers(config.excludes)
+
+        fun List<Pair<java.nio.file.PathMatcher, java.nio.file.PathMatcher>>.anyMatches(
+            rel: java.nio.file.Path,
+            fileName: java.nio.file.Path
+        ) = any { (full, fileNameOnly) -> full.matches(rel) || fileNameOnly.matches(fileName) }
+
         return sourceDir.walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
             .filter { file ->
                 val rel = sourceDir.toPath().relativize(file.toPath())
-                val included = includes.isEmpty() || includes.any { it.matches(rel) }
-                val excluded = excludes.isNotEmpty() && excludes.any { it.matches(rel) }
+                val fileName = rel.fileName
+                val included = includes.isEmpty() || includes.anyMatches(rel, fileName)
+                val excluded = excludes.isNotEmpty() && excludes.anyMatches(rel, fileName)
                 included && !excluded
             }
             .toList()
