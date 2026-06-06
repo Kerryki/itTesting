@@ -31,6 +31,10 @@ class KotlinCodeParser {
         val ktFile = parseKotlinCode(content) ?: return null
 
         val packageName = ktFile.packageFqName.asString()
+        if (packageName.isBlank()) {
+            logger.warn("Skipping use case in file with no package declaration")
+            return null
+        }
         val useCaseClass = findUseCaseClass(ktFile) ?: return null
         val className = useCaseClass.name ?: return null
 
@@ -52,20 +56,31 @@ class KotlinCodeParser {
                 .find { it.name == "execute" } ?: return null
         }
 
-        val methodName = useCaseMethod.name ?: return null
-        val paramList = useCaseMethod.valueParameters.firstOrNull() ?: return null
-        val requestTypeName = paramList.typeReference?.text?.trim() ?: return null
-        val responseTypeName = useCaseMethod.typeReference?.text?.trim() ?: return null
+        val params = useCaseMethod.valueParameters
+        val parameterCount = params.size
 
-        logger.debug("Parsed UseCase: $className method=$methodName request=$requestTypeName response=$responseTypeName")
+        val requestTypeName = when {
+            parameterCount == 0 -> ""
+            parameterCount == 1 -> params[0].typeReference?.text?.trim() ?: return null
+            else -> params.joinToString(", ") { p ->
+                "${p.name ?: "_"}: ${p.typeReference?.text?.trim() ?: "Any"}"
+            }
+        }
+
+        val rawResponseType = useCaseMethod.typeReference?.text?.trim() ?: "Unit"
+        val isListResponse = rawResponseType.trimEnd('?').startsWith("List<")
+
+        logger.debug("Parsed UseCase: $className paramCount=$parameterCount request=$requestTypeName response=$rawResponseType")
 
         return ParsedUseCase(
             className = className,
             packageName = packageName,
             requestTypeName = requestTypeName,
-            responseTypeName = responseTypeName,
+            responseTypeName = rawResponseType,
             requestFields = emptyList(),
-            responseFields = emptyList()
+            responseFields = emptyList(),
+            parameterCount = parameterCount,
+            isListResponse = isListResponse
         )
     }
 

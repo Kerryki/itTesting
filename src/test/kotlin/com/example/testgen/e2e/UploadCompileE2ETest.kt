@@ -2,6 +2,7 @@ package com.example.testgen.e2e
 
 import com.example.testgen.parser.KotlinCodeParser
 import com.example.testgen.generator.TestFileGenerator
+import com.example.testgen.domain.ScanResult
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
@@ -33,7 +34,7 @@ class UploadCompileE2ETest {
         )
 
         val generator = TestFileGenerator()
-        val generatedFile = generator.generateTest(useCaseWithFields)
+        val generatedFile = generator.generateTest(ScanResult(useCaseWithFields, emptyList()))
 
         assertThat(generatedFile).isNotNull
         assertThat(generatedFile.filename).endsWith("Test.kt")

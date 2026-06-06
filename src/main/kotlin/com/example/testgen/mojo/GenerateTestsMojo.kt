@@ -2,6 +2,7 @@ package com.example.testgen.mojo
 
 import com.example.testgen.config.ConfigLoader
 import com.example.testgen.domain.GeneratedFile
+import com.example.testgen.domain.ScanResult
 import com.example.testgen.generator.TestFileGenerator
 import com.example.testgen.parser.KotlinCodeParser
 import com.example.testgen.scanner.UseCaseScanner
@@ -39,8 +40,7 @@ class GenerateTestsMojo : AbstractMojo() {
             val generator = TestFileGenerator()
 
             val generatedFiles = scanResults.map { scanResult ->
-                // resolvedDtos available via scanResult.resolvedDtos; generator API extended in a future phase
-                generator.generateTest(scanResult.useCase)
+                generator.generateTest(scanResult)
             }
 
             generatedFiles.forEach { generatedFile ->

@@ -1,8 +1,10 @@
 package com.example.testgen.generator
 
+import com.example.testgen.domain.DataClassInfo
 import com.example.testgen.domain.DtoField
 import com.example.testgen.domain.GeneratedFile
 import com.example.testgen.domain.ParsedUseCase
+import com.example.testgen.domain.ScanResult
 import org.junit.jupiter.api.Test
 import org.assertj.core.api.Assertions.assertThat
 
@@ -22,16 +24,17 @@ class TestFileGeneratorTest {
             responseFields = listOf(
                 DtoField("orderId", "String", false),
                 DtoField("status", "String", false)
-            )
+            ),
+            parameterCount = 2
         )
 
         val generator = TestFileGenerator()
-        val generatedFile = generator.generateTest(useCase)
+        val generatedFile = generator.generateTest(ScanResult(useCase, emptyList()))
 
         assertThat(generatedFile).isNotNull
         assertThat(generatedFile.filename).contains("CreateOrderUseCase")
         assertThat(generatedFile.filename).endsWith("Test.kt")
-        assertThat(generatedFile.content).contains("CreateOrderUseCaseTest")
+        assertThat(generatedFile.content).contains("CreateOrderUseCaseIntegrationTest")
         assertThat(generatedFile.content).contains("@SpringBootTest")
         assertThat(generatedFile.content).contains("WebTestClient")
         assertThat(generatedFile.content).contains("TODO")
@@ -45,15 +48,17 @@ class TestFileGeneratorTest {
             requestTypeName = "GetUserRequest",
             responseTypeName = "GetUserResponse",
             requestFields = emptyList(),
-            responseFields = emptyList()
+            responseFields = emptyList(),
+            parameterCount = 2
         )
 
         val generator = TestFileGenerator()
-        val generatedFile = generator.generateTest(useCase)
+        val generatedFile = generator.generateTest(ScanResult(useCase, emptyList()))
 
+        // GetUserRequest appears in the path-param TODO comment (parameterCount > 0, no resolved DTO)
         assertThat(generatedFile.content).contains("GetUserRequest")
         assertThat(generatedFile.content).contains("GetUserResponse")
-        assertThat(generatedFile.content).contains("GetUserUseCaseTest")
+        assertThat(generatedFile.content).contains("GetUserUseCaseIntegrationTest")
     }
 
     @Test
@@ -73,9 +78,53 @@ class TestFileGeneratorTest {
         )
 
         val generator = TestFileGenerator()
-        val generatedFile = generator.generateTest(useCase)
+        val generatedFile = generator.generateTest(ScanResult(useCase, emptyList()))
 
         assertThat(generatedFile.content).isNotBlank
-        assertThat(generatedFile.content).contains("class SimpleUseCaseTest")
+        assertThat(generatedFile.content).contains("class SimpleUseCaseIntegrationTest")
+    }
+
+    @Test
+    fun `should backtick-escape reserved keywords in import statements`() {
+        val useCase = ParsedUseCase(
+            className = "CreateTaskUseCase",
+            packageName = "com.example.taskmanager.domain.port.`in`",
+            requestTypeName = "CreateTaskCommand",
+            responseTypeName = "Unit",
+            requestFields = listOf(DtoField("title", "String", false)),
+            responseFields = emptyList(),
+            parameterCount = 1
+        )
+        val commandDto = DataClassInfo(
+            name = "CreateTaskCommand",
+            packageName = "com.example.taskmanager.domain.port.in",
+            fields = listOf(DtoField("title", "String", false))
+        )
+
+        val generator = TestFileGenerator()
+        val generatedFile = generator.generateTest(ScanResult(useCase, listOf(commandDto)))
+
+        assertThat(generatedFile.content).contains("import com.example.taskmanager.domain.port.`in`.CreateTaskCommand")
+        assertThat(generatedFile.content).doesNotContain("import com.example.taskmanager.domain.port.in.CreateTaskCommand")
+    }
+
+    @Test
+    fun `should emit TODO comment instead of hasSize for list responses`() {
+        val useCase = ParsedUseCase(
+            className = "ListTasksUseCase",
+            packageName = "com.example.tasks.usecase",
+            requestTypeName = "Unit",
+            responseTypeName = "List<Task>",
+            requestFields = emptyList(),
+            responseFields = emptyList(),
+            isListResponse = true
+        )
+
+        val generator = TestFileGenerator()
+        val generatedFile = generator.generateTest(ScanResult(useCase, emptyList()))
+
+        assertThat(generatedFile.content).contains("// TODO: assert expected list size")
+        // The comment contains ".hasSize(1)" as an example; assert the uncommented call-chain form is absent
+        assertThat(generatedFile.content).doesNotContainPattern("(?m)^\\s+\\.hasSize\\(1\\)\\s*$")
     }
 }
